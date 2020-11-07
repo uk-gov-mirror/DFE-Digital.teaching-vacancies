@@ -8,7 +8,7 @@ require 'tempfile'
 
 ALLOWED_SOURCES = ['parameter', 'parameter-path', 'yaml-file']
 ALLOWED_DESTINATION = ['stdout', 'file', 'command', 'quiet']
-ALLOWED_FORMATS = ['hash', 'shell-env-var', 'tf-shell-env-var']
+ALLOWED_FORMATS = ['hash', 'shell-env-var', 'tf-shell-env-var', 'yaml', 'json']
 
 @log = Logger.new(STDOUT)
 @log.level = Logger::INFO
@@ -31,6 +31,8 @@ def usage
       hash (default): Raw ruby hash {KEY => VALUE}
       shell-env-var: Standard shell environment variables KEY=VALUE
       tf-shell-env-var: Terraform environment variables TF_VAR_KEY=VALUE
+      yaml: Yaml
+      json: Raw json (single line)
     -v (--verbose): verbose output
   EOF
   @log.debug caller
@@ -235,6 +237,10 @@ when 'shell-env-var'
 when 'tf-shell-env-var'
   config_map = make_tf_vars_map config_map
   output_string = env_var_list(config_map)
+when 'yaml'
+  output_string = YAML.dump(config_map)
+when 'json'
+  output_string = JSON.dump(config_map)
 else
   output_string = config_map.to_s
 end
