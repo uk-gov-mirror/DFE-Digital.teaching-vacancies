@@ -9,6 +9,7 @@ require 'tempfile'
 ALLOWED_SOURCES = ['parameter', 'parameter-path', 'yaml-file']
 ALLOWED_DESTINATION = ['stdout', 'file', 'command', 'quiet']
 ALLOWED_FORMATS = ['hash', 'shell-env-var', 'tf-shell-env-var', 'yaml', 'json']
+EDITOR = 'vim'
 
 @log = Logger.new(STDOUT)
 @log.level = Logger::INFO
@@ -29,14 +30,19 @@ def usage
       quiet : No output (Validates input)
     -f (--format): Output format
       hash (default): Raw ruby hash {KEY => VALUE}
-      shell-env-var: Standard shell environment variables KEY=VALUE
-      tf-shell-env-var: Terraform environment variables TF_VAR_KEY=VALUE
+      shell-env-var: Standard shell environment variables KEY=VALUE (Not for nested variables)
+      tf-shell-env-var: Terraform environment variables TF_VAR_KEY=VALUE (Not for nested variables)
       yaml: Yaml
       json: Raw json (single line)
     -v (--verbose): verbose output
   EOF
   @log.debug caller
-  exit(1)
+  exit 1
+end
+
+def error_exit(message)
+  @log.error message
+  exit 2
 end
 
 def collect_source(arg)
@@ -61,7 +67,6 @@ end
 
 def run_command_with_env(config_map, command)
   @log.debug 'Running command: ' + command
-  config_map = stringify(config_map)
   ENV.update(config_map)
   exec command
 end
@@ -143,6 +148,9 @@ def stringify(config_map)
   @log.debug 'Converting non string values to strings'
 
   config_map.map { |k, v|
+    if v.is_a?(Hash) || v.is_a?(Array)
+      error_exit "Error: This format does not accept nested variables: #{k}: #{v}"
+    end
     v = v.to_s unless v.is_a? String
     [k, v]
   }.to_h
@@ -160,6 +168,18 @@ def env_var_list(config_map)
   erb = ERB.new shell_template
 
   erb.result
+end
+
+def open_in_editor(config_map)
+  new_map = {}
+  Tempfile.create { |f|
+    YAML.dump(config_map, f)
+    f.rewind
+    @log.debug "Opening file #{f.path} with editor: #{EDITOR}"
+    system(EDITOR, f.path)
+    new_map = YAML.load_file(f.path)
+  }
+  new_map
 end
 
 ##### Configuration #####
@@ -219,23 +239,17 @@ config_map.update(read_from_yaml_files sources['yaml-file'])
 
 ##### Transform #####
 config_map = sort_by_key(config_map)
-
-if edit
-  Tempfile.create { |f|
-    YAML.dump(config_map, f)
-    f.rewind
-    system('vim', f.path)
-    config_map = YAML.load_file(f.path)
-  }
-end
+config_map = open_in_editor(config_map) if edit
 
 @log.debug "Configuration: #{config_map}"
 
 case output_format
 when 'shell-env-var'
+  config_map = stringify(config_map)
   output_string = env_var_list(config_map)
 when 'tf-shell-env-var'
   config_map = make_tf_vars_map config_map
+  config_map = stringify(config_map)
   output_string = env_var_list(config_map)
 when 'yaml'
   output_string = YAML.dump(config_map)
