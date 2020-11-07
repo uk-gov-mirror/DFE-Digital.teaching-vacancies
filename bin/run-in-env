@@ -5,6 +5,7 @@ require 'logger'
 require 'yaml'
 require 'aws-sdk-ssm'
 require 'erb'
+require 'tempfile'
 
 OUTPUT_LIST = ['stdout', 'env_stdout', 'env_file', 'subshell', 'tf_subshell', 'quiet']
 
@@ -18,6 +19,7 @@ def usage
     -p (--parameter): parameter name in AWS SSM Parameter store. Can be repeated
     -t (--parameter-path): parameter path in AWS SSM Parameter store hierarchy. Can be repeated
     -y (--yaml-file): path to yaml file containing parameters. Can be repeated
+    -e (--edit): open editor to edit manually before output
     -o (--output):
       stdout (default): Write raw config to standard out
       env_stdout: Write list of shell variables to standard out
@@ -147,6 +149,7 @@ opts = GetoptLong.new(
   [ '--parameter', '-p', GetoptLong::REQUIRED_ARGUMENT ],
   [ '--parameter-path', '-t', GetoptLong::REQUIRED_ARGUMENT ],
   [ '--yaml-file', '-y', GetoptLong::REQUIRED_ARGUMENT ],
+  [ '--edit', '-e', GetoptLong::NO_ARGUMENT ],
   [ '--output', '-o', GetoptLong::REQUIRED_ARGUMENT ],
   [ '--output_file', '-f', GetoptLong::REQUIRED_ARGUMENT ],
   [ '--verbose', '-v', GetoptLong::NO_ARGUMENT ]
@@ -155,6 +158,7 @@ opts = GetoptLong.new(
 parameters = []
 parameter_paths = []
 yaml_files = []
+edit = false
 output = nil
 output_file = nil
 command = nil
@@ -169,6 +173,8 @@ opts.each do |opt, arg|
     parameter_paths << arg
   when '--yaml-file'
     yaml_files << arg
+  when '--edit'
+    edit = true
   when '--output'
     output = arg
   when '--output_file'
@@ -224,7 +230,17 @@ config_map = sort_by_key(config_map)
 
 @log.debug "Configuration: #{config_map}"
 
+if edit
+  Tempfile.create { |f|
+    YAML.dump(config_map, f)
+    f.rewind
+    system('vim', f.path)
+    config_map = YAML.load_file(f.path)
+  }
+end
+
 ##### Output #####
+
 if output == 'stdout'
   puts config_map
 end
