@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-
 require 'getoptlong'
 require 'logger'
 require 'yaml'
@@ -7,44 +6,67 @@ require 'aws-sdk-ssm'
 require 'erb'
 require 'tempfile'
 
-OUTPUT_LIST = ['stdout', 'env_stdout', 'env_file', 'subshell', 'tf_subshell', 'quiet']
+ALLOWED_SOURCES = ['parameter', 'parameter-path', 'yaml-file']
+ALLOWED_DESTINATION = ['stdout', 'file', 'command', 'quiet']
+ALLOWED_FORMATS = ['hash', 'shell-env-var', 'tf-shell-env-var']
 
 @log = Logger.new(STDOUT)
 @log.level = Logger::INFO
 
 def usage
   puts <<~EOF
-  Usage: run_in_env.sh [-p <parameter>]... [-t <parameter-path>]... [-o <output>] [-f <output_file>] [-v] [-- <command>]
+  Usage: run_in_env.sh [-v] -s type:locator [-s type:locator]... [-d type[:locator]] [-f format] [-- <command>]
   Arguments:
-    -p (--parameter): parameter name in AWS SSM Parameter store. Can be repeated
-    -t (--parameter-path): parameter path in AWS SSM Parameter store hierarchy. Can be repeated
-    -y (--yaml-file): path to yaml file containing parameters. Can be repeated
-    -e (--edit): open editor to edit manually before output
-    -o (--output):
-      stdout (default): Write raw config to standard out
-      env_stdout: Write list of shell variables to standard out
-      env_file: Write to a .env file to set up shell environment. Must provide -f
-      subshell: Run command in a subshell with env. variables. Must provide command
-      tf_subshell: Run command in a subshell with terraform env. variables. Must provide command
-      quiet: No output (Validates input)
-    -f (--output_file): path to output file
+    -s (--source): Source of variables
+      parameter:<locator> parameter name in AWS SSM Parameter store
+      parameter-path:<locator> parameter path in AWS SSM Parameter store hierarchy
+      yaml-file:<locator> path to yaml file containing parameters
+    -e (--edit): open editor to edit variables manually before output
+    -d (--destination): Destination of variables
+      stdout (default) : Write to standard out
+      file:<path> : Write to file at <path>
+      command : Run command in environment populated by the variables. Requires '-- <command>' at the end of the line
+      quiet : No output (Validates input)
+    -f (--format): Output format
+      hash (default): Raw ruby hash {KEY => VALUE}
+      shell-env-var: Standard shell environment variables KEY=VALUE
+      tf-shell-env-var: Terraform environment variables TF_VAR_KEY=VALUE
     -v (--verbose): verbose output
   EOF
+  @log.debug caller
   exit(1)
 end
 
-def should_run_command_in_subshell(output)
-  output == 'subshell' || output == 'tf_subshell'
+def collect_source(arg)
+  @log.debug "Extract source from #{arg}"
+  source_type, source_locator = arg.split(':')
+  usage unless ALLOWED_SOURCES.include? source_type
+  usage unless source_locator
+  new_source = {source_type => [source_locator]}
+  @log.debug "Collecting #{new_source}"
+  new_source
+end
+
+def extract_destination(arg)
+  @log.debug "Extract destination from #{arg}"
+  destination_type, destination_locator = arg.split(':')
+  usage unless ALLOWED_DESTINATION.include? destination_type
+  usage if destination_type == 'file' && ! destination_locator
+  new_destination = {type: destination_type, locator: destination_locator}
+  @log.debug "Found destination #{new_destination}"
+  new_destination
 end
 
 def run_command_with_env(config_map, command)
   @log.debug 'Running command: ' + command
+  config_map = stringify(config_map)
   ENV.update(config_map)
   exec command
 end
 
 def pull_ssm_parameters(parameters)
   @log.debug 'Fetching parameters ' + parameters.to_s
+  return {} unless parameters
   config_map = {}
   ssm_client = Aws::SSM::Client.new(region: 'eu-west-2')
 
@@ -67,6 +89,7 @@ end
 
 def pull_ssm_parameter_paths(parameter_paths)
   @log.debug 'Fetching parameters in paths ' + parameter_paths.to_s
+  return {} unless parameter_paths
   config_map = {}
   ssm_client = Aws::SSM::Client.new(region: 'eu-west-2')
 
@@ -92,6 +115,7 @@ end
 
 def read_from_yaml_files(yaml_files)
   @log.debug 'Fetching parameters from files ' + yaml_files.to_s
+  return {} unless yaml_files
   config_map = {}
 
   yaml_files.each{ |yaml_file|
@@ -136,99 +160,63 @@ def env_var_list(config_map)
   erb.result
 end
 
-def create_env_file(config_map, output_file)
-  @log.debug 'Writing shell environment file: ' + output_file
-  output = env_var_list(config_map)
-
-  File.write(output_file, output)
-end
-
 ##### Configuration #####
 opts = GetoptLong.new(
   [ '--help', '-h', GetoptLong::NO_ARGUMENT ],
-  [ '--parameter', '-p', GetoptLong::REQUIRED_ARGUMENT ],
-  [ '--parameter-path', '-t', GetoptLong::REQUIRED_ARGUMENT ],
-  [ '--yaml-file', '-y', GetoptLong::REQUIRED_ARGUMENT ],
+  [ '--source', '-s', GetoptLong::REQUIRED_ARGUMENT ],
   [ '--edit', '-e', GetoptLong::NO_ARGUMENT ],
-  [ '--output', '-o', GetoptLong::REQUIRED_ARGUMENT ],
-  [ '--output_file', '-f', GetoptLong::REQUIRED_ARGUMENT ],
+  [ '--destination', '-d', GetoptLong::OPTIONAL_ARGUMENT ],
+  [ '--format', '-f', GetoptLong::REQUIRED_ARGUMENT ],
   [ '--verbose', '-v', GetoptLong::NO_ARGUMENT ]
 )
 
-parameters = []
-parameter_paths = []
-yaml_files = []
+sources = {}
 edit = false
-output = nil
-output_file = nil
+destination = nil
+output_format = nil
 command = nil
 
 opts.each do |opt, arg|
   case opt
   when '--help'
     usage
-  when '--parameter'
-    parameters << arg
-  when '--parameter-path'
-    parameter_paths << arg
-  when '--yaml-file'
-    yaml_files << arg
+  when '--source'
+    sources.update(collect_source(arg)){ |k, v1, v2|
+      @log.debug "Appending #{v2} to #{v1}"
+      v1 + v2
+    }
   when '--edit'
     edit = true
-  when '--output'
-    output = arg
-  when '--output_file'
-    output_file = arg
+  when '--destination'
+    destination = extract_destination(arg)
+  when '--format'
+    usage unless ALLOWED_FORMATS.include? arg
+    output_format = arg
   when '--verbose'
     @log.level = Logger::DEBUG
   end
 end
 
 ##### Validation #####
-usage if parameters.empty? && parameter_paths.empty? && yaml_files.empty?
+usage if sources.empty?
 
-if output
-  usage unless OUTPUT_LIST.include? output
-else
-  output = 'stdout'
-end
+destination = {type: 'stdout'} unless destination
 
-if should_run_command_in_subshell(output)
+if destination[:type] == 'command'
   command = ARGV.join(' ')
   usage unless command != ''
-end
-
-if output == 'env_file' && ! output_file
-  usage
+  destination[:command] = command
 end
 
 ##### Pull data #####
 config_map = {}
 
-unless parameters.empty?
-  config_map.update pull_ssm_parameters parameters
-end
-
-unless parameter_paths.empty?
-  config_map.update pull_ssm_parameter_paths parameter_paths
-end
-
-unless yaml_files.empty?
-  config_map.update read_from_yaml_files yaml_files
-end
+config_map.update(pull_ssm_parameters sources['parameter'])
+config_map.update(pull_ssm_parameter_paths sources['parameter-path'])
+config_map.update(read_from_yaml_files sources['yaml-file'])
 
 ##### Transform #####
-if output == 'tf_subshell'
-  config_map = make_tf_vars_map config_map
-end
-
-if should_run_command_in_subshell(output)
-  config_map = stringify(config_map)
-end
-
 config_map = sort_by_key(config_map)
-
-@log.debug "Configuration: #{config_map}"
 
 if edit
   Tempfile.create { |f|
@@ -239,20 +227,24 @@ if edit
   }
 end
 
+@log.debug "Configuration: #{config_map}"
+
+case output_format
+when 'shell-env-var'
+  output_string = env_var_list(config_map)
+when 'tf-shell-env-var'
+  config_map = make_tf_vars_map config_map
+  output_string = env_var_list(config_map)
+else
+  output_string = config_map.to_s
+end
+
 ##### Output #####
-
-if output == 'stdout'
-  puts config_map
-end
-
-if output == 'env_stdout'
-  puts env_var_list(config_map)
-end
-
-if output == 'env_file'
-  create_env_file(config_map, output_file)
-end
-
-if should_run_command_in_subshell(output)
-  run_command_with_env(config_map, command)
+case destination[:type]
+when 'stdout'
+  puts output_string
+when 'file'
+  File.write(destination[:locator], output_string)
+when 'command'
+  run_command_with_env(config_map, destination[:command])
 end
