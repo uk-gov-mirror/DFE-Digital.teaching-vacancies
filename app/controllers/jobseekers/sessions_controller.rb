@@ -10,6 +10,10 @@ class Jobseekers::SessionsController < Devise::SessionsController
 
   private
 
+  def sign_out_publisher!
+    sign_out(:publisher)
+  end
+
   def render_form_with_errors
     self.resource = JobseekerSignInForm.new(sign_in_params)
     if params[:action] == "create" && resource.invalid?

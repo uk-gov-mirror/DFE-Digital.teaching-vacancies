@@ -102,7 +102,7 @@ RSpec.describe "Hiring staff signing in with fallback email authentication" do
         end
 
         scenario "cannot sign in if key has expired" do
-          visit new_identifications_path
+          visit new_publisher_session_path
           fill_in "publisher[email]", with: publisher.email
           expect(message_delivery).to receive(:deliver_later)
           click_on "commit"

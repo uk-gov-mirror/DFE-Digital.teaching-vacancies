@@ -7,9 +7,6 @@ h2.govuk-heading-m = t(".title")
 
 - else
   p = t(".description")
-  - if AuthenticationFallback.enabled?
-    = govuk_link_to t("buttons.sign_in"), new_identifications_path, class: "govuk-button--secondary govuk-!-margin-bottom-0 identifications-button", button: true
-  - else
-    = govuk_button_to t("buttons.sign_in"), identifications_path, class: "govuk-button--secondary govuk-!-margin-bottom-0 identifications-button"
+  = govuk_link_to t("buttons.sign_in"), new_publisher_session_path, class: "govuk-button--secondary govuk-!-margin-bottom-0 identifications-button", button: true
 
-  p = t(".signin_guidance_html", link: govuk_link_to(t(".signin_link"), new_identifications_path))
+  p = t(".signin_guidance_html", link: govuk_link_to(t(".signin_link"), new_publisher_session_path))
