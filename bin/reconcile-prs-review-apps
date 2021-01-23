@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+# Exit on error. Append "|| true" if you expect an error.
+set -o errexit
+# Exit on error inside any functions or subshells.
+set -o errtrace
+# Do not allow use of undefined vars. Use ${VAR:-} to use an undefined VAR
+set -o nounset
+# Catch the error in case mysqldump fails (but gzip succeeds) in `mysqldump |gzip`
+set -o pipefail
+# Turn on traces, useful while debugging but commented out by default
+# set -o xtrace
+
+CF_API_ENDPOINT='api.london.cloud.service.gov.uk'
+CF_ORG='dfe'
+CF_SERVICE_NAME='teaching-vacancies'
+CF_TARGET='review'
+LIST_APP_GREP_PATTERNS=( "${CF_TARGET}-pr" )
+DRY_RUN='false'
+LOGIN='false'
+VERBOSE='false'
+
+delete_associated_apps() {
+  local pr="$1"
+  if [[ -n "${pr}" ]]; then
+    if [[ ${DRY_RUN} = 'true' ]] ; then
+      echo_stdout "DRY RUN: Not executing cf delete commands"
+      echo_stdout_verbose "cf delete -f -r ${CF_SERVICE_NAME}-${CF_TARGET}-pr-${pr}"
+      echo_stdout_verbose "cf delete -f -r ${CF_SERVICE_NAME}-worker-${CF_TARGET}-pr-${pr}"
+      echo_stdout_verbose "cf delete-orphaned-routes -f"
+    else
+      echo_stdout "Deleting apps for pr ${pr}"
+      cf delete -f -r "${CF_SERVICE_NAME}-${CF_TARGET}-pr-${pr}"
+      cf delete -f -r "${CF_SERVICE_NAME}-worker-${CF_TARGET}-pr-${pr}"
+      cf delete-orphaned-routes -f
+    fi
+  fi
+}
+
+delete_associated_services() {
+  local pr="$1"
+  if [[ -n "${pr}" ]]; then
+    if [[ ${DRY_RUN} = 'true' ]] ; then
+      echo_stdout "DRY RUN: Not executing cf delete commands"
+      echo_stdout_verbose "cf delete-service -f ${CF_SERVICE_NAME}-papertrail-${CF_TARGET}-pr-${pr}"
+      echo_stdout_verbose "cf delete-service -f ${CF_SERVICE_NAME}-postgres-${CF_TARGET}-pr-${pr}"
+      echo_stdout_verbose "cf delete-service -f ${CF_SERVICE_NAME}-redis-cache-${CF_TARGET}-pr-${pr}"
+      echo_stdout_verbose "cf delete-service -f ${CF_SERVICE_NAME}-redis-queue-${CF_TARGET}-pr-${pr}"
+    else
+      echo_stdout "Deleting services for pr ${pr}"
+      cf delete-service -f "${CF_SERVICE_NAME}-papertrail-${CF_TARGET}-pr-${pr}"
+      cf delete-service -f "${CF_SERVICE_NAME}-postgres-${CF_TARGET}-pr-${pr}"
+      cf delete-service -f "${CF_SERVICE_NAME}-redis-cache-${CF_TARGET}-pr-${pr}"
+      cf delete-service -f "${CF_SERVICE_NAME}-redis-queue-${CF_TARGET}-pr-${pr}"
+    fi
+  fi
+}
+
+echo_stderr() {
+  local message="${*}"
+  echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: ERROR: ${message}" >&2
+}
+
+echo_stdout() {
+  local message="${*}"
+  echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: ${message}" >&1
+}
+
+echo_stdout_verbose() {
+  local message="${*}"
+  if [[ "${VERBOSE}" = 'true' ]]; then
+    echo "[$(date +'%Y-%m-%dT%H:%M:%S%z')]: VERBOSE: ${message}" >&1
+  fi
+}
+
+main() {
+
+  while getopts ":lnvp:" flag; do
+    case "${flag}" in
+      l)
+        LOGIN='true'
+        echo_stdout "LOGIN use command-line opt of ${LOGIN}"
+        ;;
+      n)
+        DRY_RUN='true'
+        echo_stdout "DRY_RUN use command-line opt of ${DRY_RUN}"
+        ;;
+      p)
+        OLDEST_PR=$OPTARG
+        ;;
+      v)
+        VERBOSE='true'
+        echo_stdout "VERBOSE use command-line opt of ${VERBOSE}"
+        ;;
+      \? )
+        echo_stderr "Invalid Option: -${OPTARG}"
+        exit 1
+        ;;
+      : )
+        echo_stderr "Invalid Option: -${OPTARG} requires an argument"
+        exit 1
+        ;;
+    esac
+  done
+
+  if [[ "${LOGIN}" = 'true' ]]; then
+    cf api "${CF_API_ENDPOINT}"
+    cf login --sso
+  fi
+
+  echo_stdout_verbose "Setting the target Org to ${CF_ORG} and Space to ${CF_SERVICE_NAME}-${CF_TARGET}"
+  cf target -o "${CF_ORG}" -s "${CF_SERVICE_NAME}-${CF_TARGET}"
+
+  for APP_GREP_PATTERN in "${LIST_APP_GREP_PATTERNS[@]}"; do
+    if [[ -n "${OLDEST_PR}" ]]; then
+      echo_stdout "Checking apps matching ${APP_GREP_PATTERN} with IDs lower than ${OLDEST_PR}"
+      PRS=$(cf apps | cut -d ' ' -f1 | grep "${APP_GREP_PATTERN}" | awk -F '-' -v oldest_pr="${OLDEST_PR}" '$NF < oldest_pr {print $NF}' | sort -n | uniq )
+      for PR in ${PRS}; do
+        echo_stdout "working with pr ${PR}"
+        delete_associated_apps "${PR}"
+      done
+      echo_stdout "Checking services matching ${APP_GREP_PATTERN} with IDs lower than ${OLDEST_PR}"
+      PRS=$(cf services | cut -d ' ' -f1 | grep "${APP_GREP_PATTERN}" | awk -F '-' -v oldest_pr="${OLDEST_PR}" '$NF < oldest_pr {print $NF}' | sort -n | uniq )
+      for PR in ${PRS}; do
+        echo_stdout "working with pr ${PR}"
+        delete_associated_services "${PR}"
+      done
+    fi
+  done
+}
+
+main "$@"
