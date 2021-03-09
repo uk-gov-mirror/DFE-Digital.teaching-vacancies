@@ -1,3 +1,6 @@
+@import '~govuk-frontend/govuk/base';
+@import '~govuk-frontend/govuk/tools/_all';
+
 .job-alert-cta {
 
   @include govuk-media-query($until: desktop) {
@@ -12,12 +15,12 @@
 
   .job-alert-cta__fade {
     height: 6px;
-    background: linear-gradient(transparent, $govuk-border-colour);
+    background: linear-gradient(transparent, govuk-colour("mid-grey"));
   }
 
   .job-alert-cta__content {
 
-    background-color: $govuk-brand-colour;
+    background-color: govuk-colour("blue");
     padding: govuk-spacing(2);
     color: govuk-colour('white');
 

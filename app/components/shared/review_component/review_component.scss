@@ -33,7 +33,7 @@
         margin-left: -15px;
       }
       @include govuk-media-query($from: tablet) {
-        border-top: 1px solid $govuk-border-colour;
+        border-top: 1px solid govuk-colour("mid-grey");
       }
       @include govuk-media-query($from: desktop) {
         display: table;
@@ -45,7 +45,7 @@
     }
 
     .govuk-accordion__section, .review-component__body--border {
-      border-bottom: 1px solid $govuk-border-colour;
+      border-bottom: 1px solid govuk-colour("mid-grey");
     }
 
     .govuk-accordion__section--expanded {
