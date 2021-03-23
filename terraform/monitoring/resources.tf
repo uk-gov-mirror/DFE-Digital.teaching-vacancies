@@ -1,5 +1,5 @@
 module "prometheus_all" {
-  source = "git::https://github.com/DFE-Digital/cf-monitoring.git//prometheus_all"
+  source = "git::https://github.com/DFE-Digital/cf-monitoring.git//prometheus_all?ref=allow-multiple-redis-exporters"
 
   monitoring_instance_name   = local.monitoring_instance_name
   monitoring_org_name        = local.monitoring_org_name
@@ -11,5 +11,5 @@ module "prometheus_all" {
   alert_rules                = file("${path.module}/config/alert.rules.yml")
   alertmanager_slack_url     = local.alertmanager_slack_url
   alertmanager_slack_channel = local.alertmanager_slack_channel
-  redis_service_instance_id  = data.cloudfoundry_service_instance.redis_queue.id
+  redis_services             = local.redis_services
 }

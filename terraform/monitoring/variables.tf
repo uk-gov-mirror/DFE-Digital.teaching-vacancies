@@ -10,7 +10,9 @@ locals {
   space_name                 = "${local.service_name}-monitoring"
   monitoring_space_name      = "${local.service_name}-monitoring"
   service_space_name         = "${local.service_name}-production"
+  redis_cache_name           = "${local.service_name}-redis-cache-production"
   redis_queue_name           = "${local.service_name}-redis-queue-production"
+  redis_services             = [ "${local.service_space_name}/${local.redis_cache_name}", "${local.service_space_name}/${local.redis_queue_name}" ]
   aws_region                 = "eu-west-2"
   secrets                    = yamldecode(data.aws_ssm_parameter.monitoring_secrets.value)
   alertmanager_slack_url     = local.secrets["alertmanager_slack_url"]
