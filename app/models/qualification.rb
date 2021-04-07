@@ -1,6 +1,4 @@
 class Qualification < ApplicationRecord
-  include ActionView::Helpers::SanitizeHelper
-
   belongs_to :job_application
 
   SECONDARY_QUALIFICATIONS = %w[gcse as_level a_level other_secondary].freeze
