@@ -3,6 +3,8 @@ require "rails_helper"
 RSpec.describe "Jobseekers can submit a job application" do
   include ActiveJob::TestHelper
 
+  let(:confirm_data_accurate_checkbox_label) { "I confirm that the above information is accurate and complete" }
+  let(:confirm_data_usage_checkbox_label) { "I consent to my data being shared" }
   let(:jobseeker) { create(:jobseeker) }
   let(:organisation) { create(:school) }
   let(:vacancy) { create(:vacancy, organisation_vacancies_attributes: [{ organisation: organisation }]) }
@@ -20,8 +22,8 @@ RSpec.describe "Jobseekers can submit a job application" do
       click_on I18n.t("buttons.submit_application")
       expect(page).to have_content("There is a problem")
 
-      check "Confirm data accurate"
-      check "Confirm data usage"
+      check confirm_data_accurate_checkbox_label
+      check confirm_data_usage_checkbox_label
 
       expect { perform_enqueued_jobs { click_on I18n.t("buttons.submit_application") } }
         .to change { JobApplication.first.status }.from("draft").to("submitted")
@@ -38,8 +40,8 @@ RSpec.describe "Jobseekers can submit a job application" do
     let(:job_application) { create(:job_application, :status_draft, jobseeker: jobseeker, vacancy: vacancy) }
 
     it "does not allow jobseekers to submit application and go to confirmation page" do
-      check "Confirm data accurate"
-      check "Confirm data usage"
+      check confirm_data_accurate_checkbox_label
+      check confirm_data_usage_checkbox_label
 
       click_on I18n.t("buttons.submit_application")
 

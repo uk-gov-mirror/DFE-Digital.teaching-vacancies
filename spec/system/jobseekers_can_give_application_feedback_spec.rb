@@ -14,8 +14,8 @@ RSpec.describe "Jobseekers can give job application feedback after submitting th
   it "allows jobseekers to give job application feedback after submitting the application" do
     visit jobseekers_job_application_review_path(job_application)
 
-    check "Confirm data accurate"
-    check "Confirm data usage"
+    check "I confirm that the above information is accurate and complete"
+    check "I consent to my data being shared"
 
     click_on I18n.t("buttons.submit_application")
     click_on I18n.t("buttons.submit_feedback")
