@@ -7,9 +7,10 @@ class Publishers::JobListing::VacancyForm
 
   validates :state, inclusion: { in: %w[copy create edit edit_published review] }
 
-  def initialize(params = {})
+  def initialize(params = {}, persisted_vacancy:)
     @params = params
     @vacancy = Vacancy.new(params.except(:documents_attributes, :expires_at_hh, :expires_at_mm, :expires_at_meridiem))
+    @persisted_vacancy = persisted_vacancy
   end
 
   def params_to_save

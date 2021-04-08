@@ -99,11 +99,11 @@ class Publishers::Vacancies::BuildController < Publishers::Vacancies::BaseContro
   def set_up_show_form
     return if step == "wicked_finish"
 
-    @form = FORMS[step].new(@vacancy.attributes.symbolize_keys.merge(organisation_ids: @vacancy.organisation_ids))
+    @form = FORMS[step].new(@vacancy.attributes.symbolize_keys.merge(organisation_ids: @vacancy.organisation_ids), persisted_vacancy: @vacancy)
   end
 
   def set_up_update_form
-    @form = FORMS[step].new(send(FORM_PARAMS[step], params))
+    @form = FORMS[step].new(send(FORM_PARAMS[step], params), persisted_vacancy: @vacancy)
     @form.id = @vacancy.id
     @form.status = @vacancy.status
   end
