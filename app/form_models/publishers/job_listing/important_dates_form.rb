@@ -9,13 +9,13 @@ class Publishers::JobListing::ImportantDatesForm < Publishers::JobListing::Vacan
   include VacancyImportantDateValidations
   include VacancyExpiresAtFieldValidations
 
-  def initialize(params)
+  def initialize(params, persisted_vacancy:)
     @params = params
     @expires_at_hh = params.delete(:expires_at_hh) || params[:expires_at]&.strftime("%-l")
     @expires_at_mm = params.delete(:expires_at_mm) || params[:expires_at]&.strftime("%-M")
     @expires_at_meridiem = params.delete(:expires_at_meridiem) || params[:expires_at]&.strftime("%P")
 
-    super(params)
+    super(params, persisted_vacancy: persisted_vacancy)
   end
 
   def disable_editing_publish_on?

@@ -7,4 +7,8 @@ class Publishers::JobListing::ApplyingForTheJobForm < Publishers::JobListing::Va
   validates :contact_email, format: { with: /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z/i }, if: :contact_email?
 
   validates :contact_number, format: { with: /\A\+?(?:\d\s?){10,12}\z/ }, if: :contact_number?
+
+  def can_change_apply_through_teaching_vacancies?
+    true
+  end
 end

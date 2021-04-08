@@ -2,6 +2,7 @@ class Publishers::JobListing::VacancyForm
   include ActiveModel::Model
 
   attr_accessor :params, :vacancy
+  attr_reader :persisted_vacancy
 
   delegate(*Vacancy.attribute_names.map { |attr| [attr, "#{attr}=", "#{attr}?"] }.flatten, to: :vacancy)
 
