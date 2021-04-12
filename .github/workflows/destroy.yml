@@ -4,7 +4,7 @@ on:
 
   pull_request:
     branches: [ master ]
-    types: [synchronize]
+    types: [closed]
 
 env:
   DOCKERHUB_REPOSITORY: dfedigital/teaching-vacancies
