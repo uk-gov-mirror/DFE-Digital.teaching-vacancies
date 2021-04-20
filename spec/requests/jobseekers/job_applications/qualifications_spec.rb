@@ -116,6 +116,7 @@ RSpec.describe "Job applications qualifications" do
         expect { post jobseekers_job_application_qualifications_path(job_application), params: params }
           .to change { Qualification.count }.by(1)
 
+        expect(job_application.reload.in_progress_steps).to contain_exactly("qualifications")
         expect(response).to redirect_to(jobseekers_job_application_build_path(job_application, :qualifications))
       end
     end
@@ -131,69 +132,92 @@ RSpec.describe "Job applications qualifications" do
   end
 
   describe "PATCH #update" do
-    let!(:qualification) do
-      create(:qualification, job_application: job_application,
-                             category: "undergraduate",
-                             finished_studying: original_finished_studying,
-                             finished_studying_details: "Taking my time",
-                             grade: "1",
-                             subject: "Haunting",
-                             year: 1990)
-    end
-    let(:original_finished_studying) { "true" }
-    let(:params) do
-      { commit: button, jobseekers_job_application_details_qualifications_degree_form: { subject: "Spooking", finished_studying: new_finished_studying } }
-    end
-    let(:new_finished_studying) { "true" }
-    let(:button) { I18n.t("buttons.save_qualification.one") }
+    context "when updating multiple qualifications" do
+      let!(:qualifications) {
+        create(:qualification, 3,
+               category: "other_secondary",
+               institution: "Roller Skating School",
+               job_application: job_application,
+               name: "Skates Certificate",
+               year: "2000")
+      }
 
-    context "when the form is valid" do
-      before { allow_any_instance_of(Jobseekers::JobApplication::Details::Qualifications::DegreeForm).to receive(:valid?).and_return(true) }
-
-      it "updates the qualification and redirects to the qualification build step" do
-        expect { patch jobseekers_job_application_qualification_path(job_application, qualification), params: params }
-          .to change { qualification.reload.subject }.from("Haunting").to("Spooking")
-
-        expect(response).to redirect_to(jobseekers_job_application_build_path(job_application, :qualifications))
+      context "when keeping one qualification the same, deleting the second, and editing the third" do
+        let(:params) do
+          { commit: button, jobseekers_job_application_details_qualifications_secondary_other_form: { list_of_ids_of_original_quals, other_params } }
+        end
       end
 
-      context "when changing finished_studying from true to false" do
-        let(:new_finished_studying) { "false" }
+      context "when updating a form field shared by multiple qualifications" do
 
-        it "deletes the grade and year data from the record" do
+      end
+    end
+
+    context "updating a single qualification" do
+      let!(:qualification) do
+        create(:qualification, job_application: job_application,
+               category: "undergraduate",
+               finished_studying: original_finished_studying,
+               finished_studying_details: "Taking my time",
+               grade: "1",
+               subject: "Haunting",
+               year: 1990)
+      end
+      let(:original_finished_studying) { "true" }
+      let(:params) do
+        { commit: button, jobseekers_job_application_details_qualifications_degree_form: { subject: "Spooking", finished_studying: new_finished_studying } }
+      end
+      let(:new_finished_studying) { "true" }
+      let(:button) { I18n.t("buttons.save_qualification.one") }
+
+      context "when the form is valid" do
+        before { allow_any_instance_of(Jobseekers::JobApplication::Details::Qualifications::DegreeForm).to receive(:valid?).and_return(true) }
+
+        it "updates the qualification and redirects to the qualification build step" do
           expect { patch jobseekers_job_application_qualification_path(job_application, qualification), params: params }
-            .to change { qualification.reload.grade }.from("1").to("")
-            .and change { qualification.reload.year }.from(1990).to(nil)
+            .to change { qualification.reload.subject }.from("Haunting").to("Spooking")
+
+          expect(response).to redirect_to(jobseekers_job_application_build_path(job_application, :qualifications))
+        end
+
+        context "when changing finished_studying from true to false" do
+          let(:new_finished_studying) { "false" }
+
+          it "deletes the grade and year data from the record" do
+            expect { patch jobseekers_job_application_qualification_path(job_application, qualification), params: params }
+              .to change { qualification.reload.grade }.from("1").to("")
+              .and change { qualification.reload.year }.from(1990).to(nil)
+          end
+        end
+
+        context "when changing finished_studying from false to true" do
+          let(:original_finished_studying) { "false" }
+          let(:new_finished_studying) { "true" }
+
+          it "deletes the finished_studying_details data from the record" do
+            expect { patch jobseekers_job_application_qualification_path(job_application, qualification), params: params }
+              .to change { qualification.reload.finished_studying_details }.from("Taking my time").to("")
+          end
+        end
+
+        context "when the job application status is not draft" do
+          let(:job_application) { create(:job_application, :status_submitted, jobseeker: jobseeker, vacancy: vacancy) }
+
+          it "returns not_found" do
+            patch jobseekers_job_application_qualification_path(job_application, qualification), params: params
+
+            expect(response).to have_http_status(:not_found)
+          end
         end
       end
 
-      context "when changing finished_studying from false to true" do
-        let(:original_finished_studying) { "false" }
-        let(:new_finished_studying) { "true" }
-
-        it "deletes the finished_studying_details data from the record" do
+      context "when the form is invalid" do
+        it "does not update the qualification and renders the edit page" do
           expect { patch jobseekers_job_application_qualification_path(job_application, qualification), params: params }
-            .to change { qualification.reload.finished_studying_details }.from("Taking my time").to("")
+            .to(not_change { qualification.reload.subject })
+
+          expect(response).to render_template(:edit)
         end
-      end
-
-      context "when the job application status is not draft" do
-        let(:job_application) { create(:job_application, :status_submitted, jobseeker: jobseeker, vacancy: vacancy) }
-
-        it "returns not_found" do
-          patch jobseekers_job_application_qualification_path(job_application, qualification), params: params
-
-          expect(response).to have_http_status(:not_found)
-        end
-      end
-    end
-
-    context "when the form is invalid" do
-      it "does not update the qualification and renders the edit page" do
-        expect { patch jobseekers_job_application_qualification_path(job_application, qualification), params: params }
-          .to(not_change { qualification.reload.subject })
-
-        expect(response).to render_template(:edit)
       end
     end
   end

@@ -17,9 +17,9 @@ en:
       blank: Select yes if you have finished studying for this qualification
     finished_studying_details:
       blank: Tell us more information
-    grade:
+    grade_1:
       blank: Enter a grade
-    subject:
+    subject_1:
       blank: Enter a subject
     subject_and_grade_correspond:
       false: Enter all subjects and grades

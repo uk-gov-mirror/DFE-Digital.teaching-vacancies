@@ -2,8 +2,10 @@ import '../../components/locationFinder/locationFinder';
 import { renderAutocomplete } from '../../components/autocomplete/autocomplete';
 import { getLocationSuggestions } from '../../lib/api';
 
+import './manageQualifications';
 import './location';
 import './map';
+import {initTriggerElements} from "../../components/printPage/printPage";
 
 const AUTOCOMPLETE_THRESHOLD = 3;
 

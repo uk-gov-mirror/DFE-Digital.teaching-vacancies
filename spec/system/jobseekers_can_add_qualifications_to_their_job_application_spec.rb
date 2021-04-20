@@ -116,13 +116,50 @@ RSpec.describe "Jobseekers can add qualifications to their job application" do
       expect(page).not_to have_content("John Mason School")
     end
 
-    # TODO: complete these pending tests when functionality implemented
+    it "allows jobseekers to add qualifications to a group" do
+      visit jobseekers_job_application_build_path(job_application, :qualifications)
 
-    xit "allows jobseekers to edit qualifications from a group" do
-      # noop
+      click_on I18n.t("buttons.edit")
+
+      expect(current_path).to eq(edit_jobseekers_job_application_qualifications_path(job_application))
+
+      expect(page).to have_content(qualifications.first.subject)
+                  .and have_content(qualifications.first.grade)
+                  .and have_content(qualifications.second.subject)
+                  .and have_content(qualifications.second.grade)
+
+      click_on "Add another subject"
+
+      fill_in "Subject 3", with: "Subjectology"
+      fill_in "jobseekers_job_application_details_qualifications_secondary_other_form[grade_3]", with: "40%"
+
+      click_on "Add another subject"
+
+      fill_in "Subject 4", with: "Subject Studies"
+      fill_in "jobseekers_job_application_details_qualifications_secondary_other_form[grade_4]", with: "A*"
+
+      click_on I18n.t("buttons.save_qualification.other")
+
+      expect(page).to have_content(qualifications.first.subject)
+                  .and have_content(qualifications.first.grade)
+                  .and have_content(qualifications.second.subject)
+                  .and have_content(qualifications.second.grade)
+                  .and have_content("Subjectology")
+                  .and have_content("40%")
+                  .and have_content("Subject Studies")
+                  .and have_content("A*")
     end
 
-    xit "allows jobseekers to delete a row from a group" do
+    it "allows jobseekers to edit qualifications within a group" do
+      visit jobseekers_job_application_build_path(job_application, :qualifications)
+
+      click_on I18n.t("buttons.edit")
+
+      # edit a single qualification
+      # edit the year for all qualifications
+    end
+
+    xit "allows jobseekers to delete a qualification from a group" do
       # noop
     end
   end

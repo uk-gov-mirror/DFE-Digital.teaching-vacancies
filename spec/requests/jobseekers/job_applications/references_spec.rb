@@ -57,6 +57,7 @@ RSpec.describe "Job applications references" do
         expect { post jobseekers_job_application_references_path(job_application), params: params }
           .to change { Reference.count }.by(1)
 
+        expect(job_application.reload.in_progress_steps).to contain_exactly("references")
         expect(response).to redirect_to(jobseekers_job_application_build_path(job_application, :references))
       end
 

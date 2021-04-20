@@ -1,8 +1,7 @@
 class Jobseekers::JobApplications::QualificationsController < Jobseekers::BaseController
   include QualificationFormConcerns
 
-  helper_method :back_path, :category, :form, :job_application, :qualification,
-                :submit_text
+  helper_method :back_path, :category, :form, :job_application, :qualifications, :submit_text
 
   def submit_category
     if form.valid?
@@ -14,7 +13,11 @@ class Jobseekers::JobApplications::QualificationsController < Jobseekers::BaseCo
 
   def create
     if form.valid?
-      job_application.qualifications.create(qualification_params)
+      subject_and_grade_param_keys.each_slice(2) do |subject_and_grade_keys|
+        job_application.qualifications.create(qualification_params.permit(unique_param_keys.concat(subject_and_grade_keys))
+                                                                  .transform_keys { |key| key.split(/_\d+/).first })
+      end
+      update_in_progress_steps!(:qualifications)
       redirect_to back_path
     else
       render :new
@@ -45,11 +48,15 @@ class Jobseekers::JobApplications::QualificationsController < Jobseekers::BaseCo
   def form_attributes
     case action_name
     when "new"
-      { category: category }
+      { category: category, count: 1 }
     when "select_category"
       {}
     when "edit"
-      qualification.slice(:category, :finished_studying, :finished_studying_details, :grade, :institution, :name, :subject, :year)
+      attributes = qualifications.first.slice(:category, :finished_studying, :finished_studying_details, :institution, :name, :year)
+      qualifications.each_with_index do |qualification, index|
+        attributes.merge!(qualification.slice(:subject, :grade).transform_keys { |key| "#{key}_#{index + 1}" })
+      end
+      attributes.merge(count: qualifications.count)
     when "create", "update", "submit_category"
       qualification_params
     end
@@ -58,19 +65,27 @@ class Jobseekers::JobApplications::QualificationsController < Jobseekers::BaseCo
   def qualification_params
     case action_name
     when "new", "select_category", "submit_category"
-      (params[qualification_form_param_key(category)] || params).permit(:category)
+      (params[form_param_key(category)] || params).permit(:category)
     when "create", "edit", "update"
-      params.require(qualification_form_param_key(category))
-            .permit(:category, :finished_studying, :finished_studying_details, :grade, :institution, :name, :subject, :year)
+      params.require(form_param_key(category)).permit(unique_param_keys.concat(subject_and_grade_param_keys))
+            .merge(count: subject_and_grade_param_keys.count / 2)
     end
   end
 
-  def category
-    @category ||= action_name.in?(%w[edit update]) ? qualification.category : category_param
+  def unique_param_keys
+    %i[category finished_studying finished_studying_details institution name year]
   end
 
-  def category_param
-    params.permit(:category)[:category]
+  def subject_and_grade_param_keys
+    params.require(form_param_key(category)).keys.select { |key| /\Asubject_\d+\z/.match?(key) }
+  end
+
+  def category
+    @category ||= if action_name.in?(%w[edit update])
+                    qualifications.first.category
+                  else
+                    params.permit(:category)[:category]
+                  end
   end
 
   def back_path
@@ -79,10 +94,6 @@ class Jobseekers::JobApplications::QualificationsController < Jobseekers::BaseCo
 
   def job_application
     @job_application ||= current_jobseeker.job_applications.draft.find(params[:job_application_id])
-  end
-
-  def qualification
-    @qualification ||= job_application.qualifications.find(params[:id])
   end
 
   def qualifications

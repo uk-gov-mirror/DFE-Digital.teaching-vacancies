@@ -57,6 +57,7 @@ RSpec.describe "Job applications employments" do
         expect { post jobseekers_job_application_employments_path(job_application), params: params }
           .to change { Employment.count }.by(1)
 
+        expect(job_application.reload.in_progress_steps).to contain_exactly("employment_history")
         expect(response).to redirect_to(jobseekers_job_application_build_path(job_application, :employment_history))
       end
 

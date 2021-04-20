@@ -20,6 +20,7 @@ en:
     create_job: Create a job listing
     create_account: Create an account
     delete: Delete
+    delete_subject: delete subject
     dismiss: Dismiss
     edit: Edit
     end_listing: End job listing
