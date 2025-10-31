@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_10_16_154016) do
+ActiveRecord::Schema[8.0].define(version: 2025_10_31_161837) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "btree_gist"
   enable_extension "citext"
@@ -306,6 +306,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_10_16_154016) do
     t.datetime "interview_feedback_received_at"
     t.boolean "interview_feedback_received"
     t.datetime "rejected_at"
+    t.date "place_of_worship_start_date"
     t.index ["jobseeker_id"], name: "index_job_applications_jobseeker_id"
     t.index ["vacancy_id"], name: "index_job_applications_on_vacancy_id"
   end
