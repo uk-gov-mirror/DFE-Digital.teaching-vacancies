@@ -89,6 +89,7 @@ RSpec.describe PostsController do
             creating-the-perfect-teacher-job-advert
             accepting-job-applications-on-teaching-vacancies
             how-to-list-non-teaching-roles
+            how-to-manage-applications
           ]
         end
 
