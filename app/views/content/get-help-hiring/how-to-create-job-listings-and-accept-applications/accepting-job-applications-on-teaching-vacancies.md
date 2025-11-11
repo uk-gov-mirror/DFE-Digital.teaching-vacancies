@@ -1,6 +1,6 @@
 ---
 order: 200
-title: How to accept job applications
+title: Using the Teaching Vacancies application form
 meta_description: Schools can receive and manage job applications through Teaching Vacancies. Find out about our application form and how to manage candidates.
 date_posted: 17/03/2022
 date_updated: 01/05/2025
