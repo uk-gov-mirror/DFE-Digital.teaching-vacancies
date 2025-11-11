@@ -13,7 +13,7 @@ FactoryBot.define do
   # ].freeze
 
   sequence :job_title do |n|
-    "#{Faker::Adjective.positive} #{Faker::Lorem.words} #{n}"
+    "#{Faker::Adjective.positive} #{Faker::Lorem.sentence} #{n}"
   end
 
   factory :vacancy, class: "PublishedVacancy" do
