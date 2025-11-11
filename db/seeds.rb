@@ -132,4 +132,4 @@ end
 stephen = Jobseeker.find_by!(email: "stephen.dicks@education.gov.uk")
 postcodes = Vacancy.includes(:organisations).all.map { |x| x.organisation.postcode }.uniq
 
-20_000.times { |i| FactoryBot.create(:daily_subscription, :with_some_criteria, email: stephen.email, radius: i, location: postcodes.sample) }
+20_000.times { |i| FactoryBot.create(:daily_subscription, :with_some_criteria, keyword: nil, email: stephen.email, radius: i, location: postcodes.sample) }
