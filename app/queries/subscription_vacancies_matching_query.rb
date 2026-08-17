@@ -121,7 +121,12 @@ class SubscriptionVacanciesMatchingQuery
 
   # Where any of the subscription's ect_statuses match the vacancy's ect_status
   def ect_status_filter(scope, subscription_ect_statuses)
-    scope.where(ect_status: subscription_ect_statuses)
+    scope = scope.ect_suitable if subscription_ect_statuses.include?("ect_suitable")
+    # QTS not needed only applies to FE Colleges
+    if subscription_ect_statuses.include?("qts_not_needed")
+      scope = scope.joins(:organisations).merge(Organisation.colleges).qts_not_needed
+    end
+    scope
   end
 
   # legacy criteria:  value always 'true' if present

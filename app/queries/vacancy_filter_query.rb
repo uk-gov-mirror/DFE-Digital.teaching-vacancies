@@ -23,8 +23,12 @@ class VacancyFilterQuery
     job_role_keys = %i[job_roles teaching_job_roles support_job_roles]
     built_scope = apply_job_roles(job_role_keys, built_scope, filters)
 
-    built_scope = built_scope.ect_suitable if filters[:ect_statuses]&.include?("ect_suitable") || filters[:job_roles]&.include?("ect_suitable")
-    built_scope = add_organisation_type_filters(filters, built_scope)
+    built_scope = built_scope.ect_suitable if filters.fetch(:ect_statuses, []).include?("ect_suitable")
+    # QTS not needed only applies to FE Colleges
+    if filters.fetch(:ect_statuses, []).include?("qts_not_needed")
+      built_scope = add_organisation_type_filters("FE Colleges", built_scope.qts_not_needed)
+    end
+    built_scope = add_organisation_type_filters(filters[:organisation_types], built_scope) if filters[:organisation_types].present?
     built_scope = built_scope.quick_apply if filters[:quick_apply]
     built_scope = add_school_type_filters(filters, built_scope)
     built_scope = add_working_patterns_filters(filters[:working_patterns], built_scope)
@@ -33,20 +37,18 @@ class VacancyFilterQuery
 
   private
 
-  def add_organisation_type_filters(filters, built_scope)
-    return built_scope unless filters[:organisation_types].present?
-
+  def add_organisation_type_filters(organisation_types, built_scope)
     selected_school_types = []
 
-    if filters[:organisation_types].include?("Academy")
+    if organisation_types.include?("Academy")
       selected_school_types.push(School::ACADEMY_TYPE, School::FREE_SCHOOL_TYPE)
     end
 
-    if filters[:organisation_types].include?("Local authority maintained schools")
+    if organisation_types.include?("Local authority maintained schools")
       selected_school_types << School::LA_SCHOOL_TYPE
     end
 
-    if filters[:organisation_types].include?("FE Colleges")
+    if organisation_types.include?("FE Colleges")
       selected_school_types << School::COLLEGE_SCHOOL_TYPE
     end
 
