@@ -147,7 +147,7 @@ module VacancyHelpers
   def verify_vacancy_show_page_details(vacancy)
     vacancy = vacancy.decorate
     expect(page).to have_content(vacancy.job_title)
-    readable_job_roles = vacancy.job_roles.map { |role| I18n.t("helpers.label.publishers_job_listing_job_role_form.job_role_options.#{role}") }
+    readable_job_roles = vacancy.model.job_roles.map { |role| I18n.t("helpers.label.publishers_job_listing_job_role_form.job_role_options.#{role}") }
     readable_job_roles.each do |role|
       expect(page).to have_content(role)
     end

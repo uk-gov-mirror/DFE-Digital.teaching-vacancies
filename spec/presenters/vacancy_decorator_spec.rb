@@ -345,4 +345,20 @@ RSpec.describe VacancyDecorator do
       end
     end
   end
+
+  describe "#key_stages" do
+    let(:vacancy) { build_stubbed(:vacancy, key_stages: %w[ks1 early_years]) }
+
+    it "joins them correctly" do
+      expect(decorated.readable_key_stages).to eq("Key stage 1, Early years")
+    end
+
+    context "when there are no subjects" do
+      let(:vacancy) { build_stubbed(:vacancy, key_stages: []) }
+
+      it "returns empty string" do
+        expect(decorated.readable_key_stages).to be_blank
+      end
+    end
+  end
 end

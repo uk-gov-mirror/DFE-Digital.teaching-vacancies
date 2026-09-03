@@ -15,22 +15,6 @@ module ReadableVacancyHelper
   end
   # simplecov:enable
 
-  # simplecov:disable
-  def vacancy_readable_job_roles(model)
-    model.job_roles&.map { |job_role|
-      I18n.t("helpers.label.publishers_job_listing_job_role_form.job_role_options.#{job_role}")
-    }&.join(", ")
-  end
-  # simplecov:enable
-
-  # simplecov:disable
-  def vacancy_readable_key_stages(model)
-    model.key_stages&.map { |key_stage|
-      I18n.t("helpers.label.publishers_job_listing_key_stages_form.key_stages_options.#{key_stage}")
-    }&.join(", ")
-  end
-  # simplecov:enable
-
   def vacancy_readable_subjects(model)
     model.subjects.join(", ")
   end

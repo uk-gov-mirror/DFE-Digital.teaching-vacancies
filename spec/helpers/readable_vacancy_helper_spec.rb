@@ -57,20 +57,4 @@ RSpec.describe ReadableVacancyHelper do
       end
     end
   end
-
-  describe "#readable_key_stages" do
-    let(:vacancy) { build_stubbed(:vacancy, key_stages: %w[ks1 early_years]) }
-
-    it "joins them correctly" do
-      expect(vacancy_readable_key_stages(vacancy)).to eq("Key stage 1, Early years")
-    end
-
-    context "when there are no subjects" do
-      let(:vacancy) { build_stubbed(:vacancy, key_stages: []) }
-
-      it "returns empty string" do
-        expect(vacancy_readable_key_stages(vacancy)).to be_blank
-      end
-    end
-  end
 end
