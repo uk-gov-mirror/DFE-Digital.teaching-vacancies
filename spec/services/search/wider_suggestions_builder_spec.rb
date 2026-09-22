@@ -18,7 +18,6 @@ RSpec.describe Search::WiderSuggestionsBuilder do
   let(:pg_search) { double("search") }
 
   before do
-    subject
     allow(pg_search).to receive(:total_count).and_return(0, 0, 2, 4, 15, 80, 80)
   end
 
