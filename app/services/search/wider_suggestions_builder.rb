@@ -29,7 +29,7 @@ class Search::WiderSuggestionsBuilder
 
   def wider_results_count(radius)
     initial_search.class.new(
-      search_criteria.merge(radius: radius, keyword: initial_search.search_criteria[:keyword]),
+      search_criteria.merge(radius: radius),
       scope: initial_search.original_scope,
     ).total_count
   end
