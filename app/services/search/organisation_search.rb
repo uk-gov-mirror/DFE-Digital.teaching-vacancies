@@ -6,14 +6,13 @@ module Search
 
     def_delegators :location_search, :point_coordinates, :polygon
 
-    attr_reader :search_criteria, :location, :radius, :original_scope
+    attr_reader :search_criteria, :location, :radius
 
     def initialize(search_criteria, scope:)
       @search_criteria = search_criteria
       @name = search_criteria[:name]
       @location = search_criteria[:location]
       @radius = search_criteria[:radius]
-      @original_scope = scope.where(scope.where_values_hash)
       @scope = scope
     end
 
@@ -34,14 +33,21 @@ module Search
       @total_count ||= organisations.count
     end
 
-    private
-
-    def scope
+    def scope_without_location
       scope = @scope.all
 
       scope = scope.search_by_name(@name) if @name.present?
-      scope = scope.search_by_location(location, radius, polygon:) if location
       scope = scope.with_live_vacancies if @search_criteria.key?(:job_availability)
+
+      scope
+    end
+
+    private
+
+    def scope
+      scope = scope_without_location
+
+      scope = scope.search_by_location(location, radius, polygon:) if location
 
       scope
     end

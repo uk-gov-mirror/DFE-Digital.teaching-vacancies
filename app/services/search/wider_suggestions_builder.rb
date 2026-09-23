@@ -2,7 +2,7 @@ class Search::WiderSuggestionsBuilder
   include DistanceHelper
   include VacanciesOptionsHelper
 
-  attr_reader :search_criteria, :initial_radius, :initial_search
+  attr_reader :search_criteria, :initial_search
 
   def self.call(initial_search)
     builder = new(initial_search)
@@ -27,10 +27,14 @@ class Search::WiderSuggestionsBuilder
 
   private
 
+  attr_reader :initial_radius
+
   def wider_results_count(radius)
-    initial_search.class.new(
-      search_criteria.merge(radius: radius),
-      scope: initial_search.original_scope,
-    ).total_count
+    initial_search.scope_without_location.search_by_location(search_criteria[:location], radius, polygon: initial_search.polygon).count
+
+    # initial_search.class.new(
+    #   search_criteria.merge(radius: radius),
+    #   scope: initial_search.original_scope,
+    # ).total_count
   end
 end

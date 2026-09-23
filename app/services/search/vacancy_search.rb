@@ -3,7 +3,7 @@ class Search::VacancySearch
 
   def_delegators :location_search, :point_coordinates, :polygon
 
-  attr_reader :search_criteria, :keyword, :location, :radius, :organisation_slug, :sort, :original_scope
+  attr_reader :search_criteria, :keyword, :location, :radius, :organisation_slug, :sort
 
   def initialize(search_criteria, sort: nil, scope: PublishedVacancy.live)
     @search_criteria = search_criteria.except(:keyword)
@@ -12,7 +12,6 @@ class Search::VacancySearch
     @radius = search_criteria[:radius]
     @organisation_slug = search_criteria[:organisation_slug]
     @sort = sort || Search::VacancySort.new(keyword: keyword, location: location)
-    @original_scope = scope.where(scope.where_values_hash)
     @scope = scope
   end
 
@@ -49,15 +48,20 @@ class Search::VacancySearch
     @total_count ||= vacancies.size
   end
 
+  def scope_without_location
+    scope = @scope.includes(:organisations)
+    scope = scope.merge(organisation.all_vacancies) if organisation
+    scope = scope.search_by_filter(search_criteria) if search_criteria.any?
+    scope = scope.search_by_full_text(keyword) if keyword.present?
+    scope
+  end
+
   private
 
   def scope
+    scope = scope_without_location
     sort_by_distance = sort.by == "distance"
-    scope = @scope.includes(:organisations)
-    scope = scope.where(id: organisation.all_vacancies.pluck(:id)) if organisation
     scope = scope.search_by_location(location, radius, polygon:, sort_by_distance:) if location
-    scope = scope.search_by_filter(search_criteria) if search_criteria.any?
-    scope = scope.search_by_full_text(keyword) if keyword.present?
     order_scope(scope, sort_by_distance)
   end
 
