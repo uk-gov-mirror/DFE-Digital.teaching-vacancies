@@ -4,8 +4,8 @@ class Search::WiderSuggestionsBuilder
 
   attr_reader :search_criteria, :initial_radius, :initial_search
 
-  def self.call(search_instance)
-    builder = new(search_instance)
+  def self.call(initial_search)
+    builder = new(initial_search)
     return if builder.search_criteria[:location].blank?
     return if builder.initial_search.total_count >= 1
 
