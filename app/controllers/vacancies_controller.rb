@@ -48,7 +48,7 @@ class VacanciesController < ApplicationController
   end
 
   # simplecov:disable
-  def campaign_landing_page
+  def campaign_landing_page # rubocop:disable Metrics/AbcSize
     @campaign_page = CampaignPage[params[:utm_content]]
     campaign_params = CampaignSearchParamsMerger.new(campaign_search_params, @campaign_page).merged_params
     @form ||= Jobseekers::SearchForm.new(campaign_params.merge(landing_page: @campaign_page))

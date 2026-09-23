@@ -58,20 +58,28 @@ RSpec.describe Search::WiderSuggestionsBuilder do
       context "when initial_search is a Search::VacancySearch" do
         let(:initial_search) { Search::VacancySearch.new(search_params) }
 
-        xit { expect(suggestions).to eq(expected_suggestions) }
+        it {
+          pending("test refactor")
+          expect(suggestions).to eq(expected_suggestions)
+        }
       end
 
       context "when initial_search is a Search::SchoolSearch" do
         let(:initial_search) { Search::SchoolSearch.new(search_params, scope: Organisation.all) }
 
-        xit { expect(suggestions).to eq(expected_suggestions) }
+        it {
+          pending("test refactor")
+          expect(suggestions).to eq(expected_suggestions)
+        }
       end
     end
   end
 
   describe "#suggestions" do
     context "given a radius" do
-      xit "provides radius suggestions beyond the current radius" do
+      it "provides radius suggestions beyond the current radius" do
+        pending("test refactor")
+
         [10, 15, 20, 25, 50, 100, 200].each do |radius|
           expect(initial_search.class)
             .to receive(:new)
