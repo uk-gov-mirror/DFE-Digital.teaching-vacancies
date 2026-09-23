@@ -26,10 +26,6 @@ module Search
       @location_search ||= Search::LocationBuilder.new(search_criteria[:location], search_criteria[:radius])
     end
 
-    def wider_search_suggestions
-      @wider_search_suggestions ||= Search::WiderSuggestionsBuilder.call(self)
-    end
-
     def organisations
       @organisations ||= scope
     end
