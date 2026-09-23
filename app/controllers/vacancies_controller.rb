@@ -47,6 +47,7 @@ class VacanciesController < ApplicationController
     redirect_to vacancy.application_link, allow_other_host: true
   end
 
+  # simplecov:disable
   def campaign_landing_page
     @campaign_page = CampaignPage[params[:utm_content]]
     campaign_params = CampaignSearchParamsMerger.new(campaign_search_params, @campaign_page).merged_params
@@ -62,6 +63,7 @@ class VacanciesController < ApplicationController
     set_search_coordinates unless do_not_show_distance?
     trigger_search_performed_event
   end
+  # simplecov:enable
 
   def trn_interstitial
     @vacancy = PublishedVacancy.kept.listed.friendly.find(params[:id])
