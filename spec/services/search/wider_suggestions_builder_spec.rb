@@ -34,49 +34,9 @@ RSpec.describe Search::WiderSuggestionsBuilder do
       it { expect(described_class.call(initial_search)).to be_nil }
     end
 
-    context "returns suggestions" do
-      let(:expected_suggestions) do
-        [
-          ["20", 2],
-          ["25", 4],
-          ["50", 15],
-          ["100", 80],
-        ]
-      end
+    describe "returns suggestions", :geocode, :vcr do
+      let(:location) { "Hatfield" }
 
-      before do
-        [10, 15, 20, 25, 50, 100, 200].each do |radius|
-          allow(initial_search.class)
-            .to receive(:new)
-                  .with(hash_including(radius:), scope: kind_of(ActiveRecord::Relation))
-                  .and_return(pg_search)
-        end
-      end
-
-      context "when initial_search is a Search::VacancySearch" do
-        let(:initial_search) { Search::VacancySearch.new(search_params) }
-
-        it {
-          pending("test refactor")
-          expect(suggestions).to eq(expected_suggestions)
-        }
-      end
-
-      context "when initial_search is a Search::SchoolSearch" do
-        let(:initial_search) { Search::SchoolSearch.new(search_params, scope: Organisation.all) }
-
-        it {
-          pending("test refactor")
-          expect(suggestions).to eq(expected_suggestions)
-        }
-      end
-    end
-  end
-
-  describe "#suggestions", :geocode, :vcr do
-    let(:location) { "Hatfield" }
-
-    context "given a radius" do
       before do
         YAML.unsafe_load_file(Rails.root.join("spec/fixtures/polygons.yml")).map(&:attributes).each { |s| LocationPolygon.create!(s) }
         YAML.unsafe_load_file(Rails.root.join("spec/fixtures/liverpool_schools.yml")).map(&:attributes).each { |s| School.create!(s) }
@@ -91,22 +51,34 @@ RSpec.describe Search::WiderSuggestionsBuilder do
         create_list(:vacancy, 1, :published_slugged, job_title: "test sta", organisations: [st_albans_org])
       end
 
-      it "provides radius suggestions beyond the current radius" do
-        # pending("test refactor")
+      context "when initial_search is a Search::VacancySearch" do
+        let(:initial_search) { Search::VacancySearch.new(search_params) }
+        let(:expected_suggestions) do
+          [
+            ["10", 1],
+            ["50", 4],
+            ["200", 9],
+          ]
+        end
 
-        # [10, 15, 20, 25, 50, 100, 200].each do |radius|
-        #   expect(initial_search.class)
-        #     .to receive(:new)
-        #           .with(hash_including(radius:), scope: kind_of(ActiveRecord::Relation))
-        #           .and_return(pg_search)
-        # end
+        it "expects wider vacancy counts" do
+          expect(suggestions).to eq(expected_suggestions)
+        end
+      end
 
-        expect(subject.suggestions).to eq([
-          ["20", 2],
-          ["25", 4],
-          ["50", 15],
-          ["100", 80],
-        ])
+      context "when initial_search is a Search::SchoolSearch" do
+        let(:initial_search) { Search::SchoolSearch.new(search_params, scope: Organisation.all) }
+        let(:expected_suggestions) do
+          [
+            ["10", 1],
+            ["50", 2],
+            ["200", 3],
+          ]
+        end
+
+        it "expects wider school counts" do
+          expect(suggestions).to eq(expected_suggestions)
+        end
       end
     end
   end
