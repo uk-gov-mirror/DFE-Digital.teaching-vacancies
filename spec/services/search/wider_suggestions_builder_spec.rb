@@ -13,16 +13,16 @@ RSpec.describe Search::WiderSuggestionsBuilder do
     }
   end
   let(:radius) { 6 }
-  let(:location) { "somewhere" }
   let(:initial_search) { Search::VacancySearch.new(search_params) }
-  let(:pg_search) { double("search") }
-
-  before do
-    allow(pg_search).to receive(:total_count).and_return(0, 0, 2, 4, 15, 80, 80)
-  end
 
   describe ".call" do
+    let(:pg_search) { double("search") }
     let(:suggestions) { described_class.call(initial_search) }
+    let(:location) { "somewhere" }
+
+    before do
+      allow(pg_search).to receive(:total_count).and_return(0, 0, 2, 4, 15, 80, 80)
+    end
 
     context "when initial_search is missing the search_criteria[:location] then suggestion search is not allowed" do
       let(:location) { nil }
@@ -76,16 +76,33 @@ RSpec.describe Search::WiderSuggestionsBuilder do
   end
 
   describe "#suggestions" do
-    context "given a radius" do
-      it "provides radius suggestions beyond the current radius" do
-        pending("test refactor")
+    let(:location) { "Hatfield" }
 
-        [10, 15, 20, 25, 50, 100, 200].each do |radius|
-          expect(initial_search.class)
-            .to receive(:new)
-                  .with(hash_including(radius:), scope: kind_of(ActiveRecord::Relation))
-                  .and_return(pg_search)
-        end
+    context "given a radius" do
+      before do
+        YAML.unsafe_load_file(Rails.root.join("spec/fixtures/polygons.yml")).map(&:attributes).each { |s| LocationPolygon.create!(s) }
+        YAML.unsafe_load_file(Rails.root.join("spec/fixtures/liverpool_schools.yml")).map(&:attributes).each { |s| School.create!(s) }
+        YAML.unsafe_load_file(Rails.root.join("spec/fixtures/basildon_schools.yml")).map(&:attributes).each { |s| School.create!(s) }
+        YAML.unsafe_load_file(Rails.root.join("spec/fixtures/st_albans_schools.yml")).map(&:attributes).each { |s| School.create!(s) }
+        liverpool_org = School.find_by!(town: "Liverpool")
+        basildon_org = School.find_by!(town: "Basildon")
+        st_albans_org = School.find_by!(town: "St Albans")
+
+        create(:vacancy, :published_slugged, job_title: "liv", organisations: [liverpool_org])
+        create(:vacancy, :published_slugged, job_title: "bas", organisations: [basildon_org])
+        create(:vacancy, :published_slugged, job_title: "sta", organisations: [st_albans_org])
+        create(:vacancy, :published_slugged, job_title: "bas-sta", organisations: [basildon_org, st_albans_org])
+      end
+
+      it "provides radius suggestions beyond the current radius" do
+        # pending("test refactor")
+
+        # [10, 15, 20, 25, 50, 100, 200].each do |radius|
+        #   expect(initial_search.class)
+        #     .to receive(:new)
+        #           .with(hash_including(radius:), scope: kind_of(ActiveRecord::Relation))
+        #           .and_return(pg_search)
+        # end
 
         expect(subject.suggestions).to eq([
           ["20", 2],
