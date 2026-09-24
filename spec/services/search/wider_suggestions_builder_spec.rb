@@ -88,10 +88,9 @@ RSpec.describe Search::WiderSuggestionsBuilder do
         basildon_org = School.find_by!(town: "Basildon")
         st_albans_org = School.find_by!(town: "St Albans")
 
-        create(:vacancy, :published_slugged, job_title: "liv", organisations: [liverpool_org])
-        create(:vacancy, :published_slugged, job_title: "bas", organisations: [basildon_org])
-        create(:vacancy, :published_slugged, job_title: "sta", organisations: [st_albans_org])
-        create(:vacancy, :published_slugged, job_title: "bas-sta", organisations: [basildon_org, st_albans_org])
+        create_list(:vacancy, 1, :published_slugged, job_title: "test liv", organisations: [liverpool_org])
+        create_list(:vacancy, 3, :published_slugged, job_title: "test bas", organisations: [basildon_org])
+        create_list(:vacancy, 5, :published_slugged, job_title: "test sta", organisations: [st_albans_org])
       end
 
       it "provides radius suggestions beyond the current radius" do

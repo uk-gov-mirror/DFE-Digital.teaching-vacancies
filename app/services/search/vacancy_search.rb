@@ -6,7 +6,7 @@ class Search::VacancySearch
   attr_reader :search_criteria, :keyword, :location, :radius, :organisation_slug, :sort
 
   def initialize(search_criteria, sort: nil, scope: PublishedVacancy.live)
-    @search_criteria = search_criteria.except(:keyword)
+    @search_criteria = search_criteria.except(:keyword, :location, :radius)
     @keyword = search_criteria[:keyword]
     @location = search_criteria[:location]
     @radius = search_criteria[:radius]
@@ -16,8 +16,8 @@ class Search::VacancySearch
   end
 
   def active_criteria
-    search_criteria.merge(keyword: @keyword)
-      .reject { |k, v| v.blank? || (k == :radius && search_criteria[:location].blank?) }
+    search_criteria.merge(keyword: @keyword, location: @location, radius: @radius)
+      .reject { |k, v| v.blank? || (k == :radius && @location.blank?) }
   end
 
   def clear_filters_params
