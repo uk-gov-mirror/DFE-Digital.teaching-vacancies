@@ -88,8 +88,15 @@ end
 active_publishers = Publisher.where(email: active_users.map { |u| u.fetch(:email) })
 
 School.find_each do |school|
+  phases = if school.phase.in?(%w[not_applicable middle_deemed_secondary])
+             %w[secondary]
+           elsif school.phase == "middle_deemed_primary"
+             %w[primary]
+           else
+             [school.phase]
+           end
   attrs = { organisations: [school],
-            phases: (school.phase.in?(%w[not_applicable middle_deemed_secondary middle_deemed_primary]) ? %w[secondary] : [school.phase]),
+            phases: phases,
             publisher_organisation: school,
             publisher: active_publishers.sample }
   if schools.include?(school)

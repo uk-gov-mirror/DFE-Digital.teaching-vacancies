@@ -8,8 +8,6 @@ RSpec.describe Search::WiderSuggestionsBuilder do
       radius: radius,
       keyword: "test",
       location: location,
-      filters: [],
-      sort_by: nil,
     }
   end
   let(:radius) { 6 }
@@ -75,7 +73,7 @@ RSpec.describe Search::WiderSuggestionsBuilder do
     end
   end
 
-  describe "#suggestions" do
+  describe "#suggestions", :geocode, :vcr do
     let(:location) { "Hatfield" }
 
     context "given a radius" do
@@ -88,9 +86,9 @@ RSpec.describe Search::WiderSuggestionsBuilder do
         basildon_org = School.find_by!(town: "Basildon")
         st_albans_org = School.find_by!(town: "St Albans")
 
-        create_list(:vacancy, 1, :published_slugged, job_title: "test liv", organisations: [liverpool_org])
+        create_list(:vacancy, 5, :published_slugged, job_title: "test liv", organisations: [liverpool_org])
         create_list(:vacancy, 3, :published_slugged, job_title: "test bas", organisations: [basildon_org])
-        create_list(:vacancy, 5, :published_slugged, job_title: "test sta", organisations: [st_albans_org])
+        create_list(:vacancy, 1, :published_slugged, job_title: "test sta", organisations: [st_albans_org])
       end
 
       it "provides radius suggestions beyond the current radius" do

@@ -21,7 +21,8 @@ class Search::VacancySearch
   end
 
   def clear_filters_params
-    active_criteria.merge(teaching_job_roles: [], support_job_roles: [], ect_statuses: [], phases: [], working_patterns: [], quick_apply: [], subjects: [], organisation_types: [], school_types: [], previous_keyword: keyword, visa_sponsorship_availability: [], skip_strip_checkboxes: true)
+    active_criteria.merge(teaching_job_roles: [], support_job_roles: [], ect_statuses: [], phases: [], working_patterns: [],
+                          quick_apply: [], subjects: [], organisation_types: [], school_types: [], previous_keyword: keyword, visa_sponsorship_availability: [], skip_strip_checkboxes: true)
   end
 
   def remove_filter_params
@@ -33,7 +34,7 @@ class Search::VacancySearch
   end
 
   def location_search
-    @location_search ||= Search::LocationBuilder.new(search_criteria[:location], search_criteria[:radius])
+    @location_search ||= Search::LocationBuilder.new(@location, @radius)
   end
 
   def organisation
