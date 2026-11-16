@@ -22,6 +22,11 @@ V1_JOB_ROLES = %w[
   pastoral_health_and_welfare
   other_leadership
   other_support
+  leadership_and_management
+  business_support_administration_and_corporate_services
+  student_support_learning_and_progress
+  marketing_and_communications
+  apprenticeships_and_commercial_services
 ].freeze
 
 V1_CONTRACT_TYPES = %w[
