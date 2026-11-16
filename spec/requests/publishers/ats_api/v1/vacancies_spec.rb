@@ -620,7 +620,7 @@ RSpec.describe "ats-api/v1/vacancies", openapi_spec: "v1/swagger.yaml" do
              benefits_details: "Original benefits",
              visa_sponsorship_available: false,
              key_stages: %w[ks1 ks2],
-             subjects: %w[English Spanish])
+             subjects: %w[English Spanish Catering])
     end
     let(:id) { original_vacancy.id }
 

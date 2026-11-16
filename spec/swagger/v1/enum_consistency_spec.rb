@@ -31,7 +31,7 @@ RSpec.describe "V1 API schema enum consistency" do
     "working_patterns" => { v1: V1_WORKING_PATTERNS, model: -> { Vacancy::WORKING_PATTERNS } },
     "phases" => { v1: V1_PHASES, model: -> { Vacancy.phases.keys } },
     "key_stages" => { v1: V1_KEY_STAGES, model: -> { Vacancy.key_stages.keys } },
-    "subjects" => { v1: V1_SUBJECTS, model: -> { SUBJECT_OPTIONS.map(&:first) } },
+    "subjects" => { v1: V1_SUBJECTS, model: -> { VACANCY_SEARCH_SUBJECT_OPTIONS.map(&:first) } },
   }.each do |field, sources|
     describe field do
       let(:v1_values) { sources[:v1].map(&:to_s).sort }
